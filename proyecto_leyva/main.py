@@ -5,53 +5,67 @@ import database
 def main(page: ft.Page):
     page.title = "Proyecto PAEC: Vida Saludable"
     page.theme_mode = ft.ThemeMode.LIGHT
+    page.bgcolor = "#e5f3ff"
     page.scroll = ft.ScrollMode.AUTO
 
     def build_home_view():
 
-
         header = ft.Container(
-            content=ft.Text("Proyecto PAEC: Vida Saludable", size=28, weight=ft.FontWeight.BOLD, color="#2b7cff"),
-            padding=12,
-            bgcolor="#ffffff",
-            border_radius=8
+            content=ft.Row([
+                ft.Icon(ft.icons.Icons.FAVORITE, color="#ffd54f", size=40),
+                ft.Column([
+                    ft.Text("Proyecto PAEC", size=34, weight=ft.FontWeight.BOLD, color="#ffffff"),
+                    ft.Text("Vida Saludable", size=20, color="#e7f3ff"),
+                    ft.Text("Energía y concentración para tu vida escolar.", size=12, color="#dbe9ff")
+                ], tight=True, spacing=4)
+            ], alignment=ft.MainAxisAlignment.START, spacing=16),
+            padding=24,
+            bgcolor="#206fb6",
+            border_radius=22
         )
 
-        def card(title_text, body_text):
+        def card(icon, title_text, body_text):
             return ft.Container(
                 content=ft.Column([
-                    ft.Text(title_text, size=40, weight=ft.FontWeight.BOLD, color="#1f4f9c"),
-                    ft.Text(body_text, size=20, color="#444444")
-                ], tight=True, spacing=6),
-                padding=12,
-                margin=10,
+                    ft.Row([
+                        ft.Icon(icon, color="#206fb6", size=24),
+                        ft.Text(title_text, size=16, weight=ft.FontWeight.BOLD, color="#1f4f9c")
+                    ], spacing=8, alignment=ft.MainAxisAlignment.START),
+                    ft.Text(body_text, size=13, color="#444444")
+                ], tight=True, spacing=10),
+                padding=18,
+                margin=0,
                 bgcolor="#ffffff",
-                border_radius=8
+                border_radius=18,
+                expand=True
             )
 
-        cards = ft.Column([
-            card("BIenvenid@", "¡Bienvenido al Proyecto PAEC: Vida Saludable!"),
-        ])
+        cards = ft.Row([
+            card(ft.icons.Icons.EGG, "Alimentación", "Frutas, verduras y proteína para rendir mejor."),
+            card(ft.icons.Icons.FITNESS_CENTER, "Actividad", "Ejercicio diario para más energía y memoria."),
+            card(ft.icons.Icons.BEDTIME, "Descanso", "Dormir bien ayuda a tu salud y rendimiento.")
+        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=12)
 
-        history_button = ft.Button("Conciencia Histórica", on_click=lambda e: navigate_to("/history"))
-        chemistry_button = ft.Button("Reacciones Químicas", on_click=lambda e: navigate_to("/chemistry"))
-        bmi_button = ft.Button("Calcular mi IMC", on_click=lambda e: navigate_to("/bmi"))
-
+        history_button = ft.Button("Conciencia Histórica", icon=ft.icons.Icons.HISTORY, on_click=lambda e: navigate_to("/history"), bgcolor="#ffb703", color="#1f1f1f")
+        chemistry_button = ft.Button("Reacciones Químicas", icon=ft.icons.Icons.SCIENCE, on_click=lambda e: navigate_to("/chemistry"), bgcolor="#fb8500", color="#ffffff")
+        bmi_button = ft.Button("Calcular mi IMC", icon=ft.icons.Icons.FAVORITE, on_click=lambda e: navigate_to("/bmi"), bgcolor="#023047", color="#ffffff")
 
         home_col = ft.Column([
             header,
             ft.Divider(height=10),
             cards,
-            ft.Row([history_button, chemistry_button], alignment=ft.MainAxisAlignment.CENTER, spacing=20, expand=True),
-            ft.Row([bmi_button], alignment=ft.MainAxisAlignment.CENTER)
-        ], spacing=12)
+            ft.Row([history_button, chemistry_button, bmi_button], alignment=ft.MainAxisAlignment.CENTER, spacing=16)
+        ], spacing=18)
 
-        return ft.View(scroll=ft.ScrollMode.AUTO, controls=[ft.Container(content=home_col, padding=20, bgcolor="#f7fbff")])
+        return ft.View(scroll=ft.ScrollMode.AUTO, controls=[ft.Container(content=home_col, padding=24, bgcolor="#f0f8ff")])
 
     def build_history_view():
-        back_button = ft.Button("Volver", on_click=lambda e: navigate_to("/"))
+        back_button = ft.Button("Volver", icon=ft.icons.Icons.ARROW_BACK, on_click=lambda e: navigate_to("/"), bgcolor="#206fb6", color="#ffffff")
         history_col = ft.Column([
-            ft.Text("Conciencia Histórica", size=24, weight=ft.FontWeight.BOLD, color="#2b7cff"),
+            ft.Row([
+                ft.Icon(ft.icons.Icons.HISTORY, color="#206fb6", size=32),
+                ft.Text("Conciencia Histórica", size=24, weight=ft.FontWeight.BOLD, color="#2b7cff")
+            ], alignment=ft.MainAxisAlignment.START, spacing=12),
             ft.Divider(),
             ft.Text(
                 "Comprender la historia nos permite valorar cómo las sociedades han evolucionado hacia estilos de vida más saludables, reconociendo la salud como un derecho fundamental adquirido a través del tiempo.",
@@ -64,9 +78,12 @@ def main(page: ft.Page):
         return ft.View(scroll=ft.ScrollMode.AUTO, controls=[ft.Container(content=history_col, padding=20, bgcolor="#f7fbff")])
 
     def build_chem_view():
-        back_button = ft.Button("Volver", on_click=lambda e: navigate_to("/"))
+        back_button = ft.Button("Volver", icon=ft.icons.Icons.ARROW_BACK, on_click=lambda e: navigate_to("/"), bgcolor="#206fb6", color="#ffffff")
         chem_col = ft.Column([
-            ft.Text("Reacciones Químicas", size=24, weight=ft.FontWeight.BOLD, color="#2b7cff"),
+            ft.Row([
+                ft.Icon(ft.icons.Icons.SCIENCE, color="#206fb6", size=32),
+                ft.Text("Reacciones Químicas", size=24, weight=ft.FontWeight.BOLD, color="#2b7cff")
+            ], alignment=ft.MainAxisAlignment.START, spacing=12),
             ft.Divider(),
             ft.Text(
                 "Las reacciones químicas en el cuerpo, como el metabolismo de nutrientes y la producción de energía, requieren una alimentación adecuada y descanso para funcionar óptimamente, impactando directamente en la salud general.",
