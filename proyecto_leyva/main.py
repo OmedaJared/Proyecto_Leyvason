@@ -7,54 +7,9 @@ def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.LIGHT
     page.scroll = ft.ScrollMode.AUTO
 
-    # --- Content pieces reused in home view
-    title = ft.Text("Proyecto PAEC: Vida Saludable", size=24, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER)
-
-    intro = ft.Text(
-        "Fundamento: Vida saludable: Comprender los cambios necesarios para llevar una vida saludable: cambios en hábitos alimenticios, actividad física y descanso, así como el beneficio e impacto en el desempeño académico de los alumnos.\n\n"
-        "Propósito: Comprender que cambios son necesarios para llevar a cabo una vida saludable, añadir algunas recomendaciones en la alimentación, actividad física y descanso, y definir como benefician estos cambios en el desempeño académico.\n\n"
-        "Objetivo: Desarrollar una Interfaz gráfica en lenguaje Python, utilizando el Framework Flet, conectando con base de datos, en la que se muestre la información generada en las asignaturas de conciencia histórica y reacciones químicas.",
-        size=14
-    )
-
-    diet_title = ft.Text("Hábitos Alimenticios", size=18, weight=ft.FontWeight.BOLD)
-    diet_text = ft.Text(
-        "Cambios necesarios: Adoptar una dieta equilibrada rica en frutas, verduras, proteínas magras y granos enteros. Reducir el consumo de azúcares procesados y grasas saturadas.\n"
-        "Recomendaciones: Desayunar completo, comer porciones moderadas, hidratarse bien."
-    )
-
-    exercise_title = ft.Text("Actividad Física", size=18, weight=ft.FontWeight.BOLD)
-    exercise_text = ft.Text(
-        "Cambios necesarios: Incorporar al menos 30 minutos de actividad física moderada diaria.\n"
-        "Recomendaciones: Caminar, correr, nadar, practicar deportes. Incluir ejercicios de fuerza 2-3 veces por semana."
-    )
-
-    rest_title = ft.Text("Descanso", size=18, weight=ft.FontWeight.BOLD)
-    rest_text = ft.Text(
-        "Cambios necesarios: Dormir 7-9 horas por noche, mantener rutinas de sueño consistentes.\n"
-        "Recomendaciones: Evitar pantallas 1 hora antes de dormir, crear un ambiente tranquilo para dormir."
-    )
-
-    academic_title = ft.Text("Beneficio e Impacto en el Desempeño Académico", size=18, weight=ft.FontWeight.BOLD)
-    academic_text = ft.Text(
-        "Estos cambios mejoran la concentración, memoria, reducción del estrés y aumento de la energía, lo que resulta en mejor rendimiento escolar, asistencia y motivación."
-    )
-
-    hist_title = ft.Text("Conciencia Histórica", size=18, weight=ft.FontWeight.BOLD)
-    hist_text = ft.Text(
-        "Comprender la historia nos permite valorar cómo las sociedades han evolucionado hacia estilos de vida más saludables, reconociendo la salud como un derecho fundamental adquirido a través del tiempo."
-    )
-
-    chem_title = ft.Text("Reacciones Químicas", size=18, weight=ft.FontWeight.BOLD)
-    chem_text = ft.Text(
-        "Las reacciones químicas en el cuerpo, como el metabolismo de nutrientes y la producción de energía, requieren una alimentación adecuada y descanso para funcionar óptimamente, impactando directamente en la salud general."
-    )
-
-    # --- Helpers to build views
     def build_home_view():
-        bmi_button = ft.Button("Calcular mi IMC", on_click=lambda e: navigate_to("/bmi"))
 
-        # Build a card-based layout using Flet controls (colors via hex codes)
+
         header = ft.Container(
             content=ft.Text("Proyecto PAEC: Vida Saludable", size=28, weight=ft.FontWeight.BOLD, color="#2b7cff"),
             padding=12,
@@ -65,8 +20,8 @@ def main(page: ft.Page):
         def card(title_text, body_text):
             return ft.Container(
                 content=ft.Column([
-                    ft.Text(title_text, size=18, weight=ft.FontWeight.BOLD, color="#1f4f9c"),
-                    ft.Text(body_text, size=13, color="#444444")
+                    ft.Text(title_text, size=40, weight=ft.FontWeight.BOLD, color="#1f4f9c"),
+                    ft.Text(body_text, size=20, color="#444444")
                 ], tight=True, spacing=6),
                 padding=12,
                 margin=10,
@@ -75,23 +30,20 @@ def main(page: ft.Page):
             )
 
         cards = ft.Column([
-            card("Fundamento", "Vida saludable: Comprender los cambios necesarios para llevar una vida saludable: cambios en hábitos alimenticios, actividad física y descanso, asín como el beneficio e impacto en el desempeño académico de los alumnos."),
-            card("Propósito", "Comprender que cambios son necesarios para llevar a cabo una vida saludable, añadir algunas recomendaciones en la alimentación, actividad física y descanso, y definir como benefician estos cambios en el desempeño académico."),
-            card("Objetivo", "Desarrollar una Interfaz gráfica en lenguaje Python, utilizando el Framework Flet, conectando con base de datos, en la que se muestre la información generada en las asignaturas de conciencia histórica y reacciones químicas."),
-            card("Hábitos Alimenticios", "Adoptar una dieta equilibrada rica en frutas, verduras, proteínas magras y granos enteros. Reducir azúcares procesados y grasas saturadas. Recomendaciones: Desayunar completo, porciones moderadas, hidratarse bien."),
-            card("Actividad Física", "Incorporar al menos 30 minutos de actividad física moderada diaria. Recomendaciones: Caminar, correr, nadar, practicar deportes. Incluir fuerza 2-3 veces por semana."),
-            card("Descanso", "Dormir 7-9 horas por noche, mantener rutinas de sueño. Evitar pantallas 1 hora antes de dormir.")
+            card("BIenvenid@", "¡Bienvenido al Proyecto PAEC: Vida Saludable!"),
         ])
 
         history_button = ft.Button("Conciencia Histórica", on_click=lambda e: navigate_to("/history"))
         chemistry_button = ft.Button("Reacciones Químicas", on_click=lambda e: navigate_to("/chemistry"))
+        bmi_button = ft.Button("Calcular mi IMC", on_click=lambda e: navigate_to("/bmi"))
+
 
         home_col = ft.Column([
             header,
             ft.Divider(height=10),
             cards,
-            ft.Row([history_button, chemistry_button], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-            ft.Row([bmi_button], alignment=ft.MainAxisAlignment.END)
+            ft.Row([history_button, chemistry_button], alignment=ft.MainAxisAlignment.CENTER, spacing=20, expand=True),
+            ft.Row([bmi_button], alignment=ft.MainAxisAlignment.CENTER)
         ], spacing=12)
 
         return ft.View(scroll=ft.ScrollMode.AUTO, controls=[ft.Container(content=home_col, padding=20, bgcolor="#f7fbff")])
@@ -166,11 +118,7 @@ def main(page: ft.Page):
                     exercises = "Ejercicios adaptados y de bajo impacto bajo estricta supervisión médica."
 
                 benefits = "Beneficios de llevar una vida saludable: Mejor salud cardiovascular, aumento de energía, reducción de estrés, mejora en la concentración y rendimiento académico."
-
-                # Save to DB
                 database.save_bmi(weight, height, imc_rounded, category)
-
-                # Show result in the result container
                 result_container.content = ft.Column([
                     ft.Text(f"IMC calculado: {imc_rounded}", size=16, weight=ft.FontWeight.BOLD),
                     ft.Text(f"Categoría: {category}", size=14),
@@ -206,7 +154,6 @@ def main(page: ft.Page):
 
         return ft.View(scroll=ft.ScrollMode.AUTO, controls=[ft.Container(content=bmi_col, padding=20)])
 
-    # --- Routing: show different views depending on route
     def route_change(route):
         page.views.clear()
         if page.route == "/" or page.route == "":
@@ -224,7 +171,6 @@ def main(page: ft.Page):
         route_change(route)
 
     page.on_route_change = route_change
-    # inicializar vista
     route_change(page.route or "/")
 
 
