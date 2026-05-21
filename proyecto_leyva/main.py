@@ -84,7 +84,7 @@ def page_shell(title: str, body: str, user: dict | None = None, message: str = "
     if user:
         nav_links = f"""
             <a href="/">Inicio</a>
-            <a href="/history">Historial</a>
+            <a href="/history">Conciencia histórica</a>
             <a href="/chemistry">Reacciones químicas</a>
             <a href="/bmi">IMC</a>
             <form method="post" action="/logout" style="display:inline;">
@@ -474,6 +474,12 @@ def render_login(message: str = "", message_type: str = "error") -> str:
                 </form>
             </div>
         </section>
+        <section class="card">
+            <p>También puedes conocer más sobre el pozonque y su historia en <a href="/history">Conciencia histórica</a>.</p>
+        </section>
+        <section class="card">
+            <p>Si solo necesitas consultar la sección de Conciencia histórica, puedes verla <a href="/history">aquí</a>.</p>
+        </section>
     """
     return page_shell("Iniciar sesión", body, None, message, message_type)
 
@@ -552,15 +558,79 @@ def render_home(user: dict[str, object]) -> str:
     return page_shell("Inicio", body, user)
 
 
-def render_history(user: dict[str, object]) -> str:
+def render_history(user: dict[str, object] | None) -> str:
     body = """
         <section class="hero">
             <h1>Conciencia histórica</h1>
-            <p>Comprender la historia nos permite valorar cómo las sociedades han evolucionado hacia estilos de vida más saludables, reconociendo la salud como un derecho fundamental adquirido a través del tiempo.</p>
+            <p>El pozonque es mucho más que una bebida: es un símbolo de resistencia, memoria y cuidado comunitario en los pueblos mixes y zapotecas.</p>
         </section>
 
         <section class="card">
-            <p>La salud ha sido una preocupación constante en el desarrollo humano. Con el paso del tiempo, la educación, la higiene, la nutrición y la prevención de enfermedades se han convertido en pilares de una vida mejor.</p>
+            <h2>1. El ingrediente secreto: la cocolmeca</h2>
+            <p>La raíz de cocolmeca (<em>Smilax cordifolia</em>) actúa como un tensioactivo natural, similar a una saponina. Sin ella, por más que se bata el cacao y el maíz, la espuma no alcanzaría la densidad y firmeza necesaria para "sostener el alma" de la bebida.</p>
+            <p>Tradicionalmente, la recolección de la raíz se realiza en el monte bajo rituales de respeto a la tierra, subrayando que cada elemento del pozonque viene de un permiso otorgado por la naturaleza.</p>
+        </section>
+
+        <section class="card">
+            <h2>2. La arquitectura de la bebida</h2>
+            <ol>
+                <li><strong>La base:</strong> masa de maíz blanco cocido (nixtamal) mezclada con cacao tostado y canela.</li>
+                <li><strong>El batido:</strong> se utiliza un lebrillo de barro y un molinillo de madera, con un movimiento constante y rítmico.</li>
+                <li><strong>El "sombrero" de espuma:</strong> el pozonque se sirve primero como base líquida fría o tibia, y encima se coloca cuidadosamente una montaña de espuma espesa con jícara pequeña o cuchara de madera.</li>
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2>3. Simbolismo y uso ritual</h2>
+            <p>El pozonque se consume en momentos de transición de vida y en celebraciones comunitarias.</p>
+            <ul>
+                <li><strong>Pedidas de mano:</strong> en comunidades mixes y zapotecas, el novio debe llevar los ingredientes del pozonque a la casa de la novia. Si la familia acepta la bebida y la espuma es abundante, se interpreta como buen augurio para la fertilidad y la abundancia de la pareja.</li>
+                <li><strong>Tequio y siembra:</strong> se ofrece a los trabajadores después de una jornada de ayuda comunitaria para "recuperar el alma" desgastada por el esfuerzo físico.</li>
+                <li><strong>Ofrenda a los muertos:</strong> la espuma, al ser volátil y elevarse, se cree que es la parte de la bebida que los difuntos pueden "beber" más fácilmente.</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>4. Comparativa: pozonque vs. tejate</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Característica</th>
+                            <th>Pozonque</th>
+                            <th>Tejate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Origen principal</td>
+                            <td>Sierra Mixe / Sierra Juárez</td>
+                            <td>Valles Centrales (Zapoteca)</td>
+                        </tr>
+                        <tr>
+                            <td>Agente espumante</td>
+                            <td>Raíz de cocolmeca</td>
+                            <td>Rosita de cacao y hueso de mamey</td>
+                        </tr>
+                        <tr>
+                            <td>Textura</td>
+                            <td>Espuma densa, casi sólida</td>
+                            <td>Espuma más ligera y granulosa</td>
+                        </tr>
+                        <tr>
+                            <td>Sabor</td>
+                            <td>Más terroso y especiado</td>
+                            <td>Más floral y aceitoso</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>5. El pozonque como resistencia</h2>
+            <p>El pozonque ha permanecido fiel a su tradición. Que no se haya "hispanizado" con leche o azúcar refinada en exceso es un acto de soberanía alimentaria y de memoria cultural entre los mixes, llamados "los nunca conquistados" (Ayuujk Jä’äy).</p>
+            <p>En algunas zonas se cree que si la espuma baja rápido mientras alguien bebe, es porque la persona tiene "el espíritu pesado" o está pasando por un mal momento emocional. La espuma "siente" la energía de quien la consume.</p>
             <div class="actions">
                 <a class="button" href="/">Volver al inicio</a>
             </div>
@@ -716,10 +786,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/history":
-            if not user:
-                self.redirect("/login")
-            else:
-                self.respond_html(render_history_page(user))
+            self.respond_html(render_history(user))
             return
 
         if path == "/chemistry":
