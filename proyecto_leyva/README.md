@@ -35,9 +35,48 @@ Como estudiantes, este proyecto nos ha permitido aplicar conocimientos técnicos
 3. Ejecuta `uv sync` para instalar dependencias.
 4. Ejecuta `uv run main.py` para iniciar la aplicación.
 
+
 ## Tecnologías Utilizadas
 
-- Python
-- Flet (Framework para interfaces gráficas)
-- SQLite (Base de datos)
-- uv (Gestor de paquetes y entornos virtuales)
+- **Python**: Lenguaje de programación principal del proyecto.
+- **SQLite**: Base de datos ligera y embebida para almacenar usuarios e historiales de IMC.
+- **uv**: Gestor de entornos virtuales y dependencias para Python.
+
+## Explicación de Librerías y Funciones
+
+### Librerías utilizadas
+
+- `html`, `http.cookies`, `secrets`, `http.server`, `urllib.parse`: Módulos estándar de Python para manejo de HTML, cookies, generación de tokens seguros, servidor HTTP y parseo de URLs y formularios.
+- `hashlib`: Para el hash seguro de contraseñas.
+- `os`, `pathlib.Path`: Manejo de rutas y archivos en el sistema operativo.
+- `sqlite3`: Conexión y operaciones con la base de datos SQLite.
+- `contextlib.closing`: Asegura el cierre correcto de conexiones a la base de datos.
+- `datetime`: Para registrar fechas y horas de creación y registros.
+- `typing`: Tipado estático y anotaciones para mayor claridad y robustez.
+
+### Funciones y clases principales
+
+#### Archivo `database.py`
+
+- **_connect()**: Abre una conexión a la base de datos SQLite y configura el formato de filas como diccionario.
+- **init_db()**: Inicializa la base de datos y crea las tablas necesarias (`users` y `bmi_history`) si no existen.
+- **_hash_password(password)**: Genera un hash SHA-256 de la contraseña para almacenarla de forma segura.
+- **create_user(username, email, password)**: Crea un nuevo usuario en la base de datos, almacenando el hash de la contraseña y la fecha de creación.
+- **authenticate_user(username, password)**: Verifica si el usuario y contraseña coinciden con los almacenados en la base de datos y retorna el ID del usuario si es correcto.
+- **get_user(user_id)**: Recupera la información de un usuario por su ID.
+- **save_bmi(user_id, weight, height, imc, category)**: Guarda un registro de IMC calculado para un usuario, incluyendo peso, estatura, IMC, categoría y fecha.
+- **get_history(user_id, limit)**: Obtiene el historial de cálculos de IMC de un usuario, ordenados por fecha.
+
+#### Archivo `main.py`
+
+- **get_bmi_analysis(imc)**: Analiza el valor de IMC y retorna la categoría, recomendaciones y ejercicios sugeridos.
+- **get_user_id_from_cookie(cookie_header)**: Extrae el ID de usuario de la cookie de sesión.
+- **create_session(user_id)**: Crea una nueva sesión para el usuario y genera un identificador seguro.
+- **destroy_session(session_id)**: Elimina la sesión del usuario al cerrar sesión.
+- **safe_text(value)**: Escapa caracteres especiales para evitar inyección de HTML.
+- **page_shell(title, body, ...)**: Genera la estructura HTML base de todas las páginas, incluyendo navegación y mensajes.
+- **render_login, render_register, render_home, render_history, render_chemistry, render_bmi, render_history_page, render_bmi_result**: Funciones que generan el HTML para cada sección/página de la aplicación.
+- **RequestHandler (clase)**: Hereda de `BaseHTTPRequestHandler` y gestiona todas las rutas HTTP (GET y POST), el flujo de autenticación, registro, cálculo y guardado de IMC, y navegación entre páginas.
+- **run()**: Inicializa la base de datos y arranca el servidor web en el host y puerto definidos.
+
+Cada función está diseñada para separar responsabilidades: la lógica de negocio y acceso a datos está en `database.py`, mientras que la presentación y el manejo de rutas HTTP están en `main.py`.
