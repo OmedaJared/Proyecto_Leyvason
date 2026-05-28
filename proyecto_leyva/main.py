@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import html
 import http.cookies
+import mimetypes
 import secrets
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from string import Template
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 import database
 
@@ -14,6 +15,7 @@ HOST = "127.0.0.1"
 PORT = 8000
 SESSIONS: dict[str, int] = {}
 BASE_PLANTILLAS = Path(__file__).with_name("plantillas")
+BASE_IMG = Path(__file__).with_name("img")
 
 
 def obtener_analisis_imc(imc: float) -> dict[str, str]:
@@ -150,10 +152,55 @@ def renderizar_quimica(usuario: dict[str, object]) -> str:
     return renderizar_pagina("Reacciones químicas", contenido, usuario)
 
 
+def obtener_imagenes_imc(imc: float) -> dict[str, str]:
+    if imc < 18.5:
+        return {
+            "cuerpo": "/img/peso bajisimo.png",
+            "peso": "/img/peso bajo señalado.png",
+            "alt_cuerpo": "Representación de peso bajo",
+            "alt_peso": "Peso bajo señalado",
+        }
+    if imc < 25:
+        return {
+            "cuerpo": "/img/peso normal.png",
+            "peso": "/img/peso normal señalado.png",
+            "alt_cuerpo": "Representación de peso normal",
+            "alt_peso": "Peso normal señalado",
+        }
+    if imc < 30:
+        return {
+            "cuerpo": "/img/sobrepeso.png",
+            "peso": "/img/sobre peso señalado.png",
+            "alt_cuerpo": "Representación de sobrepeso",
+            "alt_peso": "Sobrepeso señalado",
+        }
+    if imc < 35:
+        return {
+            "cuerpo": "/img/obesidad ligera.png",
+            "peso": "/img/obesidad ligera señalada.png",
+            "alt_cuerpo": "Representación de obesidad grado I",
+            "alt_peso": "Obesidad ligera señalada",
+        }
+    if imc < 40:
+        return {
+            "cuerpo": "/img/obesidad.png",
+            "peso": "/img/obesidad señalada.png",
+            "alt_cuerpo": "Representación de obesidad grado II",
+            "alt_peso": "Obesidad señalada",
+        }
+    return {
+        "cuerpo": "/img/obesidad morvida.png",
+        "peso": "/img/obesidad morvida señalada.png",
+        "alt_cuerpo": "Representación de obesidad grado III",
+        "alt_peso": "Obesidad mórbida señalada",
+    }
+
+
 def renderizar_imc(usuario: dict[str, object], mensaje: str = "", tipo_mensaje: str = "error", resultado_html: str = "") -> str:
     contenido = cargar_plantilla(
         "imc.html",
         resultado_html=resultado_html if resultado_html else "<p>Ingresa tus datos y presiona calcular.</p>",
+        imagen_info="/img/imc.png",
     )
     return renderizar_pagina("IMC", contenido, usuario, mensaje, tipo_mensaje)
 
@@ -184,12 +231,17 @@ def renderizar_historial(usuario: dict[str, object]) -> str:
 
 
 def renderizar_resultado_imc(imc: float, analisis: dict[str, str]) -> str:
+    imagenes = obtener_imagenes_imc(imc)
     return cargar_plantilla(
         "resultado_imc.html",
         imc=f"{imc:.2f}",
         categoria=texto_seguro(analisis["category"]),
         recomendacion=texto_seguro(analisis["recommendation"]),
         ejercicios=texto_seguro(analisis["exercise"]),
+        imagen_cuerpo=texto_seguro(imagenes["cuerpo"]),
+        imagen_peso=texto_seguro(imagenes["peso"]),
+        alt_cuerpo=texto_seguro(imagenes["alt_cuerpo"]),
+        alt_peso=texto_seguro(imagenes["alt_peso"]),
     )
 
 
@@ -198,6 +250,10 @@ class ManejadorSolicitudes(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
         usuario = self.usuario_actual()
+
+        if path.startswith("/img/"):
+            self.responder_imagen(path)
+            return
 
         if path == "/":
             if usuario:
@@ -341,6 +397,27 @@ class ManejadorSolicitudes(BaseHTTPRequestHandler):
         content_length = int(self.headers.get("Content-Length", "0"))
         body = self.rfile.read(content_length).decode("utf-8")
         return parse_qs(body)
+
+    def responder_imagen(self, path: str) -> None:
+        nombre_archivo = unquote(path[5:])
+        ruta = (BASE_IMG / nombre_archivo).resolve()
+        base_img_resuelta = BASE_IMG.resolve()
+
+        if ruta != base_img_resuelta and base_img_resuelta not in ruta.parents:
+            self.send_error(403, "Acceso denegado")
+            return
+
+        if not ruta.exists() or not ruta.is_file():
+            self.send_error(404, "Imagen no encontrada")
+            return
+
+        contenido = ruta.read_bytes()
+        mime_type, _ = mimetypes.guess_type(ruta.name)
+        self.send_response(200)
+        self.send_header("Content-Type", mime_type or "application/octet-stream")
+        self.send_header("Content-Length", str(len(contenido)))
+        self.end_headers()
+        self.wfile.write(contenido)
 
     def responder_html(self, html_text: str, status: int = 200) -> None:
         encoded = html_text.encode("utf-8")

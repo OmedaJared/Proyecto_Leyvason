@@ -1,8 +1,22 @@
-<div class="list">
-    <div class="mini"><strong>IMC calculado</strong><br>${imc}</div>
-    <div class="mini"><strong>Categoría</strong><br>${categoria}</div>
-    <div class="mini"><strong>Recomendaciones</strong><br>${recomendacion}</div>
-    <div class="mini"><strong>Ejercicios recomendados</strong><br>${ejercicios}</div>
-    <div class="mini"><strong>Beneficios de una vida saludable</strong><br>Mejor salud cardiovascular, más energía, menos estrés y mejor concentración.</div>
-    <div class="mini"><strong>Nota</strong><br>El IMC no siempre refleja la composición corporal exacta, por ejemplo en atletas con mucha masa muscular.</div>
+<div class="split" style="align-items: start;">
+    <div class="list">
+        <div class="mini"><strong>IMC calculado</strong><br>${imc}</div>
+        <div class="mini"><strong>Categoría</strong><br>${categoria}</div>
+        <div class="mini"><strong>Recomendaciones</strong><br>${recomendacion}</div>
+        <div class="mini"><strong>Ejercicios recomendados</strong><br>${ejercicios}</div>
+        <div class="mini"><strong>Beneficios de una vida saludable</strong><br>Mejor salud cardiovascular, más energía, menos estrés y mejor concentración.</div>
+        <div class="mini"><strong>Nota</strong><br>El IMC no siempre refleja la composición corporal exacta, por ejemplo en atletas con mucha masa muscular.</div>
+    </div>
+
+    <div class="card" style="display: grid; gap: 14px; justify-items: center;">
+        <div style="width: 100%; text-align: center;">
+            <strong style="color: #b7f7c1; display: block; margin-bottom: 10px;">Cómo se ve el cuerpo</strong>
+            <img src="${imagen_cuerpo}" alt="${alt_cuerpo}" style="width: 100%; max-width: 360px; height: auto; border-radius: 18px; border: 3px solid #000; box-shadow: 0 12px 0 #000; background: #111;">
+        </div>
+
+        <div style="width: 100%; text-align: center;">
+            <strong style="color: #b7f7c1; display: block; margin-bottom: 10px;">Peso señalado</strong>
+            <img src="${imagen_peso}" alt="${alt_peso}" style="width: 100%; max-width: 360px; height: auto; border-radius: 18px; border: 3px solid #000; box-shadow: 0 12px 0 #000; background: #111;">
+        </div>
+    </div>
 </div>
