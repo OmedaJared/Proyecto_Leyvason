@@ -1,0 +1,40 @@
+<section class="hero">
+    <h1>Iniciar sesión</h1>
+    <p>Accede para consultar contenido educativo, guardar tu IMC y revisar tu historial.</p>
+</section>
+
+<section class="split">
+    <div class="card">
+        <h2>Bienvenido</h2>
+        <p>Esta versión funciona con Python y HTML, sin Flet. El diseño usa negro y verde como colores principales.</p>
+        <div class="list">
+            <div class="mini"><strong>Alimentación</strong><br>Hábitos para rendir mejor en la escuela.</div>
+            <div class="mini"><strong>Actividad física</strong><br>Movimiento diario y bienestar general.</div>
+            <div class="mini"><strong>Descanso</strong><br>Sueño y recuperación para aprender mejor.</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Ingresar</h2>
+        <form class="form" method="post" action="/login">
+            <label>Usuario
+                <input type="text" name="username" autocomplete="username" required>
+            </label>
+            <label>Contraseña
+                <input type="password" name="password" autocomplete="current-password" required>
+            </label>
+            <div class="actions">
+                <button class="button" type="submit">Entrar</button>
+                <a class="button" href="/register">Crear cuenta</a>
+            </div>
+        </form>
+    </div>
+</section>
+
+<section class="card">
+    <p>También puedes conocer más sobre el pozonque y su historia en <a href="/history">Conciencia histórica</a>.</p>
+</section>
+
+<section class="card">
+    <p>si quieres aprender algo de la quimica del cuerpo, puedes verla <a href="/chemistry">aquí</a>.</p>
+</section>

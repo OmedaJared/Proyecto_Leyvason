@@ -4,17 +4,19 @@ import html
 import http.cookies
 import secrets
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from string import Template
 from urllib.parse import parse_qs, urlparse
 
 import database
 
 HOST = "127.0.0.1"
 PORT = 8000
-
 SESSIONS: dict[str, int] = {}
+BASE_PLANTILLAS = Path(__file__).with_name("plantillas")
 
 
-def get_bmi_analysis(imc: float) -> dict[str, str]:
+def obtener_analisis_imc(imc: float) -> dict[str, str]:
     if imc < 18.5:
         return {
             "category": "Bajo peso",
@@ -52,37 +54,41 @@ def get_bmi_analysis(imc: float) -> dict[str, str]:
     }
 
 
-def get_user_id_from_cookie(cookie_header: str | None) -> int | None:
-    if not cookie_header:
+def obtener_id_usuario_por_cookie(cabecera_cookie: str | None) -> int | None:
+    if not cabecera_cookie:
         return None
     cookie = http.cookies.SimpleCookie()
-    cookie.load(cookie_header)
-    session_cookie = cookie.get("session_id")
-    if not session_cookie:
+    cookie.load(cabecera_cookie)
+    cookie_sesion = cookie.get("session_id")
+    if not cookie_sesion:
         return None
-    session_id = session_cookie.value
-    return SESSIONS.get(session_id)
+    return SESSIONS.get(cookie_sesion.value)
 
 
-def create_session(user_id: int) -> str:
+def crear_sesion(user_id: int) -> str:
     session_id = secrets.token_urlsafe(24)
     SESSIONS[session_id] = user_id
     return session_id
 
 
-def destroy_session(session_id: str | None) -> None:
+def destruir_sesion(session_id: str | None) -> None:
     if session_id and session_id in SESSIONS:
         del SESSIONS[session_id]
 
 
-def safe_text(value: object) -> str:
+def texto_seguro(value: object) -> str:
     return html.escape("" if value is None else str(value))
 
 
-def page_shell(title: str, body: str, user: dict | None = None, message: str = "", message_type: str = "success") -> str:
-    nav_links = ""
-    if user:
-        nav_links = f"""
+def cargar_plantilla(nombre: str, **datos: object) -> str:
+    ruta = BASE_PLANTILLAS / nombre
+    contenido = ruta.read_text(encoding="utf-8")
+    return Template(contenido).safe_substitute({k: str(v) for k, v in datos.items()})
+
+
+def enlaces_navegacion(usuario: dict | None) -> str:
+    if usuario:
+        return """
             <a href="/">Inicio</a>
             <a href="/history">Conciencia histórica</a>
             <a href="/chemistry">Reacciones químicas</a>
@@ -91,716 +97,145 @@ def page_shell(title: str, body: str, user: dict | None = None, message: str = "
                 <button type="submit" class="nav-button">Salir</button>
             </form>
         """
-    else:
-        nav_links = """
-            <a href="/login">Iniciar sesión</a>
-            <a href="/register">Registrarse</a>
-        """
-
-    message_html = ""
-    if message:
-        message_html = f'<div class="message {message_type}">{safe_text(message)}</div>'
-
-    user_banner = ""
-    if user:
-        user_banner = f'<div class="user-banner">Sesión activa como <strong>{safe_text(user["username"])}</strong></div>'
-
-    return f"""<!doctype html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{safe_text(title)}</title>
-    <style>
-        :root {{
-            --bg: #050505;
-            --panel: #0f0f0f;
-            --panel-2: #151515;
-            --green: #39d353;
-            --green-dark: #1f8f36;
-            --green-soft: #b7f7c1;
-            --text: #f3f3f3;
-            --muted: #b8b8b8;
-            --border: #2a2a2a;
-            --danger: #ff5c5c;
-            --shadow: 0 12px 0 #000;
-        }}
-
-        * {{
-            box-sizing: border-box;
-        }}
-
-        body {{
-            margin: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background:
-                radial-gradient(circle at top, rgba(57, 211, 83, 0.16), transparent 30%),
-                linear-gradient(180deg, #0b0b0b, #050505);
-            color: var(--text);
-            min-height: 100vh;
-        }}
-
-        a {{
-            color: var(--green-soft);
-            text-decoration: none;
-        }}
-
-        a:hover {{
-            text-decoration: underline;
-        }}
-
-        .topbar {{
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            background: rgba(5, 5, 5, 0.95);
-            border-bottom: 3px solid var(--green-dark);
-            backdrop-filter: blur(6px);
-        }}
-
-        .topbar-inner {{
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 16px 20px;
-            display: flex;
-            gap: 14px;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-        }}
-
-        .brand {{
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-weight: 900;
-            letter-spacing: 0.3px;
-        }}
-
-        .brand-badge {{
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: var(--green);
-            border: 3px solid #000;
-            box-shadow: var(--shadow);
-            display: grid;
-            place-items: center;
-            color: #000;
-            font-size: 24px;
-        }}
-
-        .nav {{
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-        }}
-
-        .nav a,
-        .nav button,
-        .button {{
-            appearance: none;
-            border: 3px solid #000;
-            background: var(--green);
-            color: #000;
-            font-weight: 800;
-            border-radius: 14px;
-            padding: 12px 16px;
-            box-shadow: var(--shadow);
-            cursor: pointer;
-            transition: transform 0.1s ease, filter 0.1s ease;
-        }}
-
-        .nav a:hover,
-        .nav button:hover,
-        .button:hover {{
-            transform: translateY(2px);
-            filter: brightness(1.05);
-            text-decoration: none;
-        }}
-
-        .nav-button {{
-            font: inherit;
-        }}
-
-        .container {{
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 28px 20px 50px;
-        }}
-
-        .hero {{
-            background: linear-gradient(180deg, #101010, #080808);
-            border: 3px solid var(--green-dark);
-            border-radius: 28px;
-            padding: 28px;
-            box-shadow: var(--shadow);
-            margin-bottom: 22px;
-        }}
-
-        .hero h1 {{
-            margin: 0 0 8px;
-            font-size: clamp(2rem, 5vw, 3.4rem);
-            line-height: 1.05;
-        }}
-
-        .hero p {{
-            margin: 0;
-            color: var(--muted);
-            line-height: 1.6;
-            max-width: 72ch;
-        }}
-
-        .grid {{
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 18px;
-        }}
-
-        .card {{
-            background: var(--panel);
-            border: 3px solid var(--green-dark);
-            border-radius: 22px;
-            padding: 20px;
-            box-shadow: var(--shadow);
-        }}
-
-        .card h2,
-        .card h3 {{
-            margin-top: 0;
-        }}
-
-        .card p {{
-            color: var(--muted);
-            line-height: 1.6;
-        }}
-
-        .split {{
-            display: grid;
-            grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
-            gap: 18px;
-        }}
-
-        .form {{
-            display: grid;
-            gap: 14px;
-        }}
-
-        label {{
-            display: grid;
-            gap: 8px;
-            font-weight: 700;
-            color: var(--green-soft);
-        }}
-
-        input {{
-            width: 100%;
-            padding: 14px 15px;
-            border-radius: 14px;
-            border: 3px solid #000;
-            background: #121212;
-            color: var(--text);
-            outline: none;
-            box-shadow: inset 0 0 0 2px var(--border);
-        }}
-
-        input:focus {{
-            border-color: var(--green);
-            box-shadow: inset 0 0 0 2px var(--green-dark), 0 0 0 2px rgba(57, 211, 83, 0.18);
-        }}
-
-        .actions {{
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            align-items: center;
-        }}
-
-        .message {{
-            border: 3px solid #000;
-            border-radius: 16px;
-            padding: 14px 16px;
-            margin: 0 0 18px;
-            box-shadow: var(--shadow);
-            font-weight: 700;
-        }}
-
-        .message.success {{
-            background: #10341a;
-            color: #d9ffe0;
-            border-color: var(--green-dark);
-        }}
-
-        .message.error {{
-            background: #3b1010;
-            color: #ffd8d8;
-            border-color: #8f1f1f;
-        }}
-
-        .user-banner {{
-            margin-bottom: 18px;
-            background: #121212;
-            border-left: 6px solid var(--green);
-            padding: 12px 14px;
-            border-radius: 14px;
-            color: var(--muted);
-        }}
-
-        .list {{
-            display: grid;
-            gap: 14px;
-        }}
-
-        .mini {{
-            background: var(--panel-2);
-            border: 2px solid var(--border);
-            border-radius: 18px;
-            padding: 16px;
-        }}
-
-        .mini strong {{
-            color: var(--green-soft);
-        }}
-
-        .table-wrap {{
-            overflow-x: auto;
-        }}
-
-        table {{
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 760px;
-        }}
-
-        th, td {{
-            border-bottom: 1px solid var(--border);
-            padding: 12px 10px;
-            text-align: left;
-            vertical-align: top;
-        }}
-
-        th {{
-            color: var(--green-soft);
-            background: #121212;
-        }}
-
-        footer {{
-            margin-top: 26px;
-            padding-top: 18px;
-            border-top: 1px solid var(--border);
-            color: var(--muted);
-            text-align: center;
-        }}
-
-        @media (max-width: 900px) {{
-            .grid,
-            .split {{
-                grid-template-columns: 1fr;
-            }}
-
-            .topbar-inner {{
-                justify-content: center;
-            }}
-
-            .brand {{
-                width: 100%;
-                justify-content: center;
-            }}
-
-            .nav {{
-                justify-content: center;
-            }}
-        }}
-    </style>
-</head>
-<body>
-    <header class="topbar">
-        <div class="topbar-inner">
-            <div class="brand">
-                <div class="brand-badge">♥</div>
-                <div>
-                    <div style="font-size: 1.1rem;">Proyecto PAEC</div>
-                    <div style="font-size: 0.9rem; color: var(--muted);">Vida saludable</div>
-                </div>
-            </div>
-            <nav class="nav">
-                {nav_links}
-            </nav>
-        </div>
-    </header>
-
-    <main class="container">
-        {message_html}
-        {user_banner}
-        {body}
-        <footer>© 2024 Proyecto PAEC - Vida Saludable</footer>
-    </main>
-</body>
-</html>"""
-
-
-def render_login(message: str = "", message_type: str = "error") -> str:
-    body = """
-        <section class="hero">
-            <h1>Iniciar sesión</h1>
-            <p>Accede para consultar contenido educativo, guardar tu IMC y revisar tu historial.</p>
-        </section>
-
-        <section class="split">
-            <div class="card">
-                <h2>Bienvenido</h2>
-                <p>Esta versión funciona con Python y HTML, sin Flet. El diseño usa negro y verde como colores principales.</p>
-                <div class="list">
-                    <div class="mini"><strong>Alimentación</strong><br>Hábitos para rendir mejor en la escuela.</div>
-                    <div class="mini"><strong>Actividad física</strong><br>Movimiento diario y bienestar general.</div>
-                    <div class="mini"><strong>Descanso</strong><br>Sueño y recuperación para aprender mejor.</div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>Ingresar</h2>
-                <form class="form" method="post" action="/login">
-                    <label>Usuario
-                        <input type="text" name="username" autocomplete="username" required>
-                    </label>
-                    <label>Contraseña
-                        <input type="password" name="password" autocomplete="current-password" required>
-                    </label>
-                    <div class="actions">
-                        <button class="button" type="submit">Entrar</button>
-                        <a class="button" href="/register">Crear cuenta</a>
-                    </div>
-                </form>
-            </div>
-        </section>
-        <section class="card">
-            <p>También puedes conocer más sobre el pozonque y su historia en <a href="/history">Conciencia histórica</a>.</p>
-        </section>
-        <section class="card">
-            <p>Si solo necesitas consultar la sección de Conciencia histórica, puedes verla <a href="/history">aquí</a>.</p>
-        </section>
+    return """
+        <a href="/login">Iniciar sesión</a>
+        <a href="/register">Registrarse</a>
     """
-    return page_shell("Iniciar sesión", body, None, message, message_type)
 
 
-def render_register(message: str = "", message_type: str = "error") -> str:
-    body = """
-        <section class="hero">
-            <h1>Crear cuenta</h1>
-            <p>Regístrate para guardar tu información y ver el historial de IMC.</p>
-        </section>
+def renderizar_pagina(titulo: str, contenido: str, usuario: dict | None = None, mensaje: str = "", tipo_mensaje: str = "success") -> str:
+    mensaje_html = ""
+    if mensaje:
+        mensaje_html = f'<div class="message {tipo_mensaje}">{texto_seguro(mensaje)}</div>'
 
-        <section class="card">
-            <form class="form" method="post" action="/register">
-                <label>Usuario
-                    <input type="text" name="username" autocomplete="username" required>
-                </label>
-                <label>Correo
-                    <input type="email" name="email" autocomplete="email" required>
-                </label>
-                <label>Contraseña
-                    <input type="password" name="password" autocomplete="new-password" required>
-                </label>
-                <label>Confirmar contraseña
-                    <input type="password" name="confirm" autocomplete="new-password" required>
-                </label>
-                <div class="actions">
-                    <button class="button" type="submit">Registrarse</button>
-                    <a class="button" href="/login">Ya tengo cuenta</a>
-                </div>
-            </form>
-        </section>
-    """
-    return page_shell("Registro", body, None, message, message_type)
+    banner_usuario = ""
+    if usuario:
+        banner_usuario = f'<div class="user-banner">Sesión activa como <strong>{texto_seguro(usuario["username"])}</strong></div>'
 
-
-def render_home(user: dict[str, object]) -> str:
-    body = f"""
-        <section class="hero">
-            <h1>Bienvenido, {safe_text(user["username"])}</h1>
-            <p>Energía y concentración para tu vida escolar. Aquí encuentras contenido sobre salud, historia, química e IMC.</p>
-        </section>
-
-        <section class="grid">
-            <article class="card">
-                <h2>Alimentación</h2>
-                <p>Frutas, verduras y proteína para rendir mejor.</p>
-            </article>
-            <article class="card">
-                <h2>Actividad</h2>
-                <p>Ejercicio diario para más energía y memoria.</p>
-            </article>
-            <article class="card">
-                <h2>Descanso</h2>
-                <p>Dormir bien ayuda a tu salud y rendimiento.</p>
-            </article>
-        </section>
-
-        <section style="margin-top: 18px;" class="grid">
-            <article class="card">
-                <h3>Conciencia histórica</h3>
-                <p>Comprender la historia nos permite valorar cómo las sociedades han evolucionado hacia estilos de vida más saludables.</p>
-                <a class="button" href="/history">Ver sección</a>
-            </article>
-            <article class="card">
-                <h3>Reacciones químicas</h3>
-                <p>El metabolismo y la producción de energía dependen de una alimentación adecuada y descanso suficiente.</p>
-                <a class="button" href="/chemistry">Ver sección</a>
-            </article>
-            <article class="card">
-                <h3>Calculadora IMC</h3>
-                <p>Calcula tu índice de masa corporal y recibe recomendaciones personalizadas.</p>
-                <a class="button" href="/bmi">Calcular IMC</a>
-            </article>
-        </section>
-    """
-    return page_shell("Inicio", body, user)
-
-
-def render_history(user: dict[str, object] | None) -> str:
-    body = """
-        <section class="hero">
-            <h1>Conciencia histórica</h1>
-            <p>El pozonque es mucho más que una bebida: es un símbolo de resistencia, memoria y cuidado comunitario en los pueblos mixes y zapotecas.</p>
-        </section>
-
-        <section class="card">
-            <h2>1. El ingrediente secreto: la cocolmeca</h2>
-            <p>La raíz de cocolmeca (<em>Smilax cordifolia</em>) actúa como un tensioactivo natural, similar a una saponina. Sin ella, por más que se bata el cacao y el maíz, la espuma no alcanzaría la densidad y firmeza necesaria para "sostener el alma" de la bebida.</p>
-            <p>Tradicionalmente, la recolección de la raíz se realiza en el monte bajo rituales de respeto a la tierra, subrayando que cada elemento del pozonque viene de un permiso otorgado por la naturaleza.</p>
-        </section>
-
-        <section class="card">
-            <h2>2. La arquitectura de la bebida</h2>
-            <ol>
-                <li><strong>La base:</strong> masa de maíz blanco cocido (nixtamal) mezclada con cacao tostado y canela.</li>
-                <li><strong>El batido:</strong> se utiliza un lebrillo de barro y un molinillo de madera, con un movimiento constante y rítmico.</li>
-                <li><strong>El "sombrero" de espuma:</strong> el pozonque se sirve primero como base líquida fría o tibia, y encima se coloca cuidadosamente una montaña de espuma espesa con jícara pequeña o cuchara de madera.</li>
-            </ol>
-        </section>
-
-        <section class="card">
-            <h2>3. Simbolismo y uso ritual</h2>
-            <p>El pozonque se consume en momentos de transición de vida y en celebraciones comunitarias.</p>
-            <ul>
-                <li><strong>Pedidas de mano:</strong> en comunidades mixes y zapotecas, el novio debe llevar los ingredientes del pozonque a la casa de la novia. Si la familia acepta la bebida y la espuma es abundante, se interpreta como buen augurio para la fertilidad y la abundancia de la pareja.</li>
-                <li><strong>Tequio y siembra:</strong> se ofrece a los trabajadores después de una jornada de ayuda comunitaria para "recuperar el alma" desgastada por el esfuerzo físico.</li>
-                <li><strong>Ofrenda a los muertos:</strong> la espuma, al ser volátil y elevarse, se cree que es la parte de la bebida que los difuntos pueden "beber" más fácilmente.</li>
-            </ul>
-        </section>
-
-        <section class="card">
-            <h2>4. Comparativa: pozonque vs. tejate</h2>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Característica</th>
-                            <th>Pozonque</th>
-                            <th>Tejate</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Origen principal</td>
-                            <td>Sierra Mixe / Sierra Juárez</td>
-                            <td>Valles Centrales (Zapoteca)</td>
-                        </tr>
-                        <tr>
-                            <td>Agente espumante</td>
-                            <td>Raíz de cocolmeca</td>
-                            <td>Rosita de cacao y hueso de mamey</td>
-                        </tr>
-                        <tr>
-                            <td>Textura</td>
-                            <td>Espuma densa, casi sólida</td>
-                            <td>Espuma más ligera y granulosa</td>
-                        </tr>
-                        <tr>
-                            <td>Sabor</td>
-                            <td>Más terroso y especiado</td>
-                            <td>Más floral y aceitoso</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <section class="card">
-            <h2>5. El pozonque como resistencia</h2>
-            <p>El pozonque ha permanecido fiel a su tradición. Que no se haya "hispanizado" con leche o azúcar refinada en exceso es un acto de soberanía alimentaria y de memoria cultural entre los mixes, llamados "los nunca conquistados" (Ayuujk Jä’äy).</p>
-            <p>En algunas zonas se cree que si la espuma baja rápido mientras alguien bebe, es porque la persona tiene "el espíritu pesado" o está pasando por un mal momento emocional. La espuma "siente" la energía de quien la consume.</p>
-            <div class="actions">
-                <a class="button" href="/">Volver al inicio</a>
-            </div>
-        </section>
-    """
-    return page_shell("Conciencia histórica", body, user)
-
-
-def render_chemistry(user: dict[str, object]) -> str:
-    body = """
-        <section class="hero">
-            <h1>Reacciones químicas</h1>
-            <p>Las reacciones químicas en el cuerpo, como el metabolismo de nutrientes y la producción de energía, requieren una alimentación adecuada y descanso para funcionar óptimamente.</p>
-        </section>
-
-        <section class="card">
-            <p>Los carbohidratos, las proteínas y las grasas participan en procesos metabólicos que permiten obtener energía. Dormir bien y comer de forma equilibrada favorece estos procesos y mejora la salud general.</p>
-            <div class="actions">
-                <a class="button" href="/">Volver al inicio</a>
-            </div>
-        </section>
-    """
-    return page_shell("Reacciones químicas", body, user)
-
-
-def render_bmi(user: dict[str, object], message: str = "", message_type: str = "error", result_html: str = "") -> str:
-    body = f"""
-        <section class="hero">
-            <h1>Calculadora de IMC</h1>
-            <p>Ingresa tu peso y estatura para calcular tu índice de masa corporal y recibir recomendaciones.</p>
-        </section>
-
-        <section class="split">
-            <div class="card">
-                <h2>Datos</h2>
-                <form class="form" method="post" action="/bmi">
-                    <label>Peso (kg)
-                        <input type="text" name="weight" inputmode="decimal" placeholder="Ej. 62.5" required>
-                    </label>
-                    <label>Estatura (m)
-                        <input type="text" name="height" inputmode="decimal" placeholder="Ej. 1.68" required>
-                    </label>
-                    <div class="actions">
-                        <button class="button" type="submit">Calcular IMC</button>
-                        <a class="button" href="/">Volver al inicio</a>
-                    </div>
-                </form>
-            </div>
-
-            <div class="card">
-                <h2>Resultado</h2>
-                {result_html if result_html else "<p>Ingresa tus datos y presiona calcular.</p>"}
-            </div>
-        </section>
-    """
-    return page_shell("IMC", body, user, message, message_type)
-
-
-def render_history_page(user: dict[str, object]) -> str:
-    rows = database.get_history(int(user["id"]))
-    if not rows:
-        body = """
-            <section class="hero">
-                <h1>Historial de IMC</h1>
-                <p>Aún no has calculado tu IMC.</p>
-            </section>
-            <section class="card">
-                <p>Cuando calcules tu IMC, aquí aparecerán tus registros.</p>
-                <div class="actions">
-                    <a class="button" href="/bmi">Ir a la calculadora</a>
-                </div>
-            </section>
-        """
-        return page_shell("Historial", body, user)
-
-    table_rows = "".join(
-        f"""
-        <tr>
-            <td>{safe_text(row["date"])}</td>
-            <td>{safe_text(row["weight"])}</td>
-            <td>{safe_text(row["height"])}</td>
-            <td>{safe_text(row["imc"])}</td>
-            <td>{safe_text(row["category"])}</td>
-        </tr>
-        """
-        for row in rows
+    return cargar_plantilla(
+        "base.html",
+        titulo=texto_seguro(titulo),
+        enlaces_nav=enlaces_navegacion(usuario),
+        mensaje_html=mensaje_html,
+        banner_usuario=banner_usuario,
+        contenido=contenido,
     )
 
-    body = f"""
-        <section class="hero">
-            <h1>Historial de IMC</h1>
-            <p>Registros guardados de tus cálculos recientes.</p>
-        </section>
 
-        <section class="card table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Peso (kg)</th>
-                        <th>Estatura (m)</th>
-                        <th>IMC</th>
-                        <th>Categoría</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {table_rows}
-                </tbody>
-            </table>
-        </section>
-    """
-    return page_shell("Historial", body, user)
+def renderizar_inicio_sesion(mensaje: str = "", tipo_mensaje: str = "error") -> str:
+    contenido = cargar_plantilla("iniciar_sesion.html")
+    return renderizar_pagina("Iniciar sesión", contenido, None, mensaje, tipo_mensaje)
 
 
-def render_bmi_result(imc: float, analysis: dict[str, str]) -> str:
-    return f"""
-        <div class="list">
-            <div class="mini"><strong>IMC calculado</strong><br>{imc:.2f}</div>
-            <div class="mini"><strong>Categoría</strong><br>{safe_text(analysis["category"])}</div>
-            <div class="mini"><strong>Recomendaciones</strong><br>{safe_text(analysis["recommendation"])}</div>
-            <div class="mini"><strong>Ejercicios recomendados</strong><br>{safe_text(analysis["exercise"])}</div>
-            <div class="mini"><strong>Beneficios de una vida saludable</strong><br>Mejor salud cardiovascular, más energía, menos estrés y mejor concentración.</div>
-            <div class="mini"><strong>Nota</strong><br>El IMC no siempre refleja la composición corporal exacta, por ejemplo en atletas con mucha masa muscular.</div>
-        </div>
-    """
+def renderizar_registro(mensaje: str = "", tipo_mensaje: str = "error") -> str:
+    contenido = cargar_plantilla("registro.html")
+    return renderizar_pagina("Registro", contenido, None, mensaje, tipo_mensaje)
 
 
-class RequestHandler(BaseHTTPRequestHandler):
+def renderizar_inicio(usuario: dict[str, object]) -> str:
+    contenido = cargar_plantilla(
+        "inicio.html",
+        usuario=texto_seguro(usuario["username"]),
+    )
+    return renderizar_pagina("Inicio", contenido, usuario)
+
+
+def renderizar_historia(usuario: dict[str, object] | None) -> str:
+    contenido = cargar_plantilla("conciencia_historica.html")
+    return renderizar_pagina("Conciencia histórica", contenido, usuario)
+
+
+def renderizar_quimica(usuario: dict[str, object]) -> str:
+    contenido = cargar_plantilla("reacciones_quimicas.html")
+    return renderizar_pagina("Reacciones químicas", contenido, usuario)
+
+
+def renderizar_imc(usuario: dict[str, object], mensaje: str = "", tipo_mensaje: str = "error", resultado_html: str = "") -> str:
+    contenido = cargar_plantilla(
+        "imc.html",
+        resultado_html=resultado_html if resultado_html else "<p>Ingresa tus datos y presiona calcular.</p>",
+    )
+    return renderizar_pagina("IMC", contenido, usuario, mensaje, tipo_mensaje)
+
+
+def renderizar_historial(usuario: dict[str, object]) -> str:
+    filas = database.get_history(int(usuario["id"]))
+    if not filas:
+        contenido = cargar_plantilla("historial_vacio.html")
+        return renderizar_pagina("Historial", contenido, usuario)
+
+    filas_html = "".join(
+        f"""
+        <tr>
+            <td>{texto_seguro(fila["date"])}</td>
+            <td>{texto_seguro(fila["weight"])}</td>
+            <td>{texto_seguro(fila["height"])}</td>
+            <td>{texto_seguro(fila["imc"])}</td>
+            <td>{texto_seguro(fila["category"])}</td>
+        </tr>
+        """
+        for fila in filas
+    )
+    contenido = cargar_plantilla(
+        "historial.html",
+        filas_historial=filas_html,
+    )
+    return renderizar_pagina("Historial", contenido, usuario)
+
+
+def renderizar_resultado_imc(imc: float, analisis: dict[str, str]) -> str:
+    return cargar_plantilla(
+        "resultado_imc.html",
+        imc=f"{imc:.2f}",
+        categoria=texto_seguro(analisis["category"]),
+        recomendacion=texto_seguro(analisis["recommendation"]),
+        ejercicios=texto_seguro(analisis["exercise"]),
+    )
+
+
+class ManejadorSolicitudes(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         path = parsed.path
-        user = self.current_user()
+        usuario = self.usuario_actual()
 
         if path == "/":
-            if user:
-                self.respond_html(render_home(user))
+            if usuario:
+                self.responder_html(renderizar_inicio(usuario))
             else:
-                self.redirect("/login")
+                self.redirigir("/login")
             return
 
         if path == "/login":
-            if user:
-                self.redirect("/")
+            if usuario:
+                self.redirigir("/")
             else:
-                self.respond_html(render_login())
+                self.responder_html(renderizar_inicio_sesion())
             return
 
         if path == "/register":
-            if user:
-                self.redirect("/")
+            if usuario:
+                self.redirigir("/")
             else:
-                self.respond_html(render_register())
+                self.responder_html(renderizar_registro())
             return
 
         if path == "/history":
-            self.respond_html(render_history(user))
+            self.responder_html(renderizar_historia(usuario))
             return
 
         if path == "/chemistry":
-            if not user:
-                self.redirect("/login")
+            if not usuario:
+                self.redirigir("/login")
             else:
-                self.respond_html(render_chemistry(user))
+                self.responder_html(renderizar_quimica(usuario))
             return
 
         if path == "/bmi":
-            if not user:
-                self.redirect("/login")
+            if not usuario:
+                self.redirigir("/login")
             else:
-                self.respond_html(render_bmi(user))
+                self.responder_html(renderizar_imc(usuario))
             return
 
         self.send_error(404, "Página no encontrada")
@@ -808,44 +243,44 @@ class RequestHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
         path = parsed.path
-        user = self.current_user()
-        form = self.read_form()
+        usuario = self.usuario_actual()
+        formulario = self.leer_formulario()
 
         if path == "/login":
-            username = form.get("username", [""])[0].strip()
-            password = form.get("password", [""])[0]
+            username = formulario.get("username", [""])[0].strip()
+            password = formulario.get("password", [""])[0]
             if not username or not password:
-                self.respond_html(render_login("Completa todos los campos"), status=400)
+                self.responder_html(renderizar_inicio_sesion("Completa todos los campos"), status=400)
                 return
 
             user_id = database.authenticate_user(username, password)
             if not user_id:
-                self.respond_html(render_login("Usuario o contraseña incorrectos"), status=401)
+                self.responder_html(renderizar_inicio_sesion("Usuario o contraseña incorrectos"), status=401)
                 return
 
-            session_id = create_session(user_id)
-            self.respond_redirect("/", extra_headers=[("Set-Cookie", f"session_id={session_id}; HttpOnly; Path=/; SameSite=Lax")])
+            session_id = crear_sesion(user_id)
+            self.responder_redireccion("/", extra_headers=[("Set-Cookie", f"session_id={session_id}; HttpOnly; Path=/; SameSite=Lax")])
             return
 
         if path == "/register":
-            username = form.get("username", [""])[0].strip()
-            email = form.get("email", [""])[0].strip()
-            password = form.get("password", [""])[0]
-            confirm = form.get("confirm", [""])[0]
+            username = formulario.get("username", [""])[0].strip()
+            email = formulario.get("email", [""])[0].strip()
+            password = formulario.get("password", [""])[0]
+            confirm = formulario.get("confirm", [""])[0]
 
             if not username or not email or not password or not confirm:
-                self.respond_html(render_register("Completa todos los campos"), status=400)
+                self.responder_html(renderizar_registro("Completa todos los campos"), status=400)
                 return
 
             if password != confirm:
-                self.respond_html(render_register("Las contraseñas no coinciden"), status=400)
+                self.responder_html(renderizar_registro("Las contraseñas no coinciden"), status=400)
                 return
 
             if not database.create_user(username, email, password):
-                self.respond_html(render_register("El usuario o correo ya existe"), status=409)
+                self.responder_html(renderizar_registro("El usuario o correo ya existe"), status=409)
                 return
 
-            self.respond_redirect("/login", message="Cuenta creada correctamente. Inicia sesión.")
+            self.responder_redireccion("/login", mensaje="Cuenta creada correctamente. Inicia sesión.")
             return
 
         if path == "/logout":
@@ -857,57 +292,57 @@ class RequestHandler(BaseHTTPRequestHandler):
                 session = cookie.get("session_id")
                 if session:
                     session_id = session.value
-            destroy_session(session_id)
-            self.respond_redirect("/login", extra_headers=[("Set-Cookie", "session_id=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax")])
+            destruir_sesion(session_id)
+            self.responder_redireccion("/login", extra_headers=[("Set-Cookie", "session_id=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax")])
             return
 
         if path == "/bmi":
-            if not user:
-                self.redirect("/login")
+            if not usuario:
+                self.redirigir("/login")
                 return
 
-            weight_raw = form.get("weight", [""])[0].strip().replace(",", ".")
-            height_raw = form.get("height", [""])[0].strip().replace(",", ".")
+            weight_raw = formulario.get("weight", [""])[0].strip().replace(",", ".")
+            height_raw = formulario.get("height", [""])[0].strip().replace(",", ".")
 
             try:
                 if not weight_raw or not height_raw:
-                    self.respond_html(render_bmi(user, "Por favor, completa todos los campos"), status=400)
+                    self.responder_html(renderizar_imc(usuario, "Por favor, completa todos los campos"), status=400)
                     return
 
                 weight = float(weight_raw)
                 height = float(height_raw)
 
                 if weight <= 0 or height <= 0:
-                    self.respond_html(render_bmi(user, "El peso y la estatura deben ser mayores a 0"), status=400)
+                    self.responder_html(renderizar_imc(usuario, "El peso y la estatura deben ser mayores a 0"), status=400)
                     return
 
                 imc = weight / (height ** 2)
-                imc_rounded = round(imc, 2)
-                analysis = get_bmi_analysis(imc)
-                database.save_bmi(int(user["id"]), weight, height, imc_rounded, analysis["category"])
-                result_html = render_bmi_result(imc_rounded, analysis)
-                self.respond_html(render_bmi(user, "IMC calculado y guardado correctamente", "success", result_html))
+                imc_redondeado = round(imc, 2)
+                analisis = obtener_analisis_imc(imc)
+                database.save_bmi(int(usuario["id"]), weight, height, imc_redondeado, analisis["category"])
+                resultado_html = renderizar_resultado_imc(imc_redondeado, analisis)
+                self.responder_html(renderizar_imc(usuario, "IMC calculado y guardado correctamente", "success", resultado_html))
                 return
 
             except ValueError:
-                self.respond_html(render_bmi(user, "Por favor, ingresa valores numéricos válidos"), status=400)
+                self.responder_html(renderizar_imc(usuario, "Por favor, ingresa valores numéricos válidos"), status=400)
                 return
 
         self.send_error(404, "Ruta no encontrada")
 
-    def current_user(self) -> dict[str, object] | None:
-        user_id = get_user_id_from_cookie(self.headers.get("Cookie"))
+    def usuario_actual(self) -> dict[str, object] | None:
+        user_id = obtener_id_usuario_por_cookie(self.headers.get("Cookie"))
         if user_id is None:
             return None
-        user = database.get_user(user_id)
-        return user if user else None
+        usuario = database.get_user(user_id)
+        return usuario if usuario else None
 
-    def read_form(self) -> dict[str, list[str]]:
+    def leer_formulario(self) -> dict[str, list[str]]:
         content_length = int(self.headers.get("Content-Length", "0"))
         body = self.rfile.read(content_length).decode("utf-8")
         return parse_qs(body)
 
-    def respond_html(self, html_text: str, status: int = 200) -> None:
+    def responder_html(self, html_text: str, status: int = 200) -> None:
         encoded = html_text.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -915,7 +350,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(encoded)
 
-    def respond_redirect(self, location: str, message: str = "", extra_headers: list[tuple[str, str]] | None = None) -> None:
+    def responder_redireccion(self, location: str, mensaje: str = "", extra_headers: list[tuple[str, str]] | None = None) -> None:
         self.send_response(303)
         self.send_header("Location", location)
         if extra_headers:
@@ -923,7 +358,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.send_header(key, value)
         self.end_headers()
 
-    def redirect(self, location: str) -> None:
+    def redirigir(self, location: str) -> None:
         self.send_response(302)
         self.send_header("Location", location)
         self.end_headers()
@@ -932,9 +367,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         return
 
 
-def run() -> None:
+def ejecutar() -> None:
     database.init_db()
-    server = ThreadingHTTPServer((HOST, PORT), RequestHandler)
+    server = ThreadingHTTPServer((HOST, PORT), ManejadorSolicitudes)
     print(f"Servidor iniciado en http://{HOST}:{PORT}")
     try:
         server.serve_forever()
@@ -945,4 +380,4 @@ def run() -> None:
 
 
 if __name__ == "__main__":
-    run()
+    ejecutar()

@@ -1,0 +1,27 @@
+<section class="hero">
+    <h1>Calculadora de IMC</h1>
+    <p>Ingresa tu peso y estatura para calcular tu índice de masa corporal y recibir recomendaciones.</p>
+</section>
+
+<section class="split">
+    <div class="card">
+        <h2>Datos</h2>
+        <form class="form" method="post" action="/bmi">
+            <label>Peso (kg)
+                <input type="text" name="weight" inputmode="decimal" placeholder="Ej. 62.5" required>
+            </label>
+            <label>Estatura (m)
+                <input type="text" name="height" inputmode="decimal" placeholder="Ej. 1.68" required>
+            </label>
+            <div class="actions">
+                <button class="button" type="submit">Calcular IMC</button>
+                <a class="button" href="/">Volver al inicio</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Resultado</h2>
+        ${resultado_html}
+    </div>
+</section>

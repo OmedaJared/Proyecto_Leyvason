@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>${titulo}</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --panel: #0f0f0f;
+            --panel-2: #151515;
+            --green: #39d353;
+            --green-dark: #1f8f36;
+            --green-soft: #b7f7c1;
+            --text: #f3f3f3;
+            --muted: #b8b8b8;
+            --border: #2a2a2a;
+            --danger: #ff5c5c;
+            --shadow: 0 12px 0 #000;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background:
+                radial-gradient(circle at top, rgba(57, 211, 83, 0.16), transparent 30%),
+                linear-gradient(180deg, #0b0b0b, #050505);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        a {
+            color: var(--green-soft);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(5, 5, 5, 0.95);
+            border-bottom: 3px solid var(--green-dark);
+            backdrop-filter: blur(6px);
+        }
+
+        .topbar-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 16px 20px;
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 900;
+            letter-spacing: 0.3px;
+        }
+
+        .brand-badge {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--green);
+            border: 3px solid #000;
+            box-shadow: var(--shadow);
+            display: grid;
+            place-items: center;
+            color: #000;
+            font-size: 24px;
+        }
+
+        .nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .nav a,
+        .nav button,
+        .button {
+            appearance: none;
+            border: 3px solid #000;
+            background: var(--green);
+            color: #000;
+            font-weight: 800;
+            border-radius: 14px;
+            padding: 12px 16px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: transform 0.1s ease, filter 0.1s ease;
+        }
+
+        .nav a:hover,
+        .nav button:hover,
+        .button:hover {
+            transform: translateY(2px);
+            filter: brightness(1.05);
+            text-decoration: none;
+        }
+
+        .nav-button {
+            font: inherit;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 28px 20px 50px;
+        }
+
+        .hero {
+            background: linear-gradient(180deg, #101010, #080808);
+            border: 3px solid var(--green-dark);
+            border-radius: 28px;
+            padding: 28px;
+            box-shadow: var(--shadow);
+            margin-bottom: 22px;
+        }
+
+        .hero h1 {
+            margin: 0 0 8px;
+            font-size: clamp(2rem, 5vw, 3.4rem);
+            line-height: 1.05;
+        }
+
+        .hero p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.6;
+            max-width: 72ch;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 3px solid var(--green-dark);
+            border-radius: 22px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .card h2,
+        .card h3 {
+            margin-top: 0;
+        }
+
+        .card p {
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .split {
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+            gap: 18px;
+        }
+
+        .form {
+            display: grid;
+            gap: 14px;
+        }
+
+        label {
+            display: grid;
+            gap: 8px;
+            font-weight: 700;
+            color: var(--green-soft);
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 15px;
+            border-radius: 14px;
+            border: 3px solid #000;
+            background: #121212;
+            color: var(--text);
+            outline: none;
+            box-shadow: inset 0 0 0 2px var(--border);
+        }
+
+        input:focus {
+            border-color: var(--green);
+            box-shadow: inset 0 0 0 2px var(--green-dark), 0 0 0 2px rgba(57, 211, 83, 0.18);
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .message {
+            border: 3px solid #000;
+            border-radius: 16px;
+            padding: 14px 16px;
+            margin: 0 0 18px;
+            box-shadow: var(--shadow);
+            font-weight: 700;
+        }
+
+        .message.success {
+            background: #10341a;
+            color: #d9ffe0;
+            border-color: var(--green-dark);
+        }
+
+        .message.error {
+            background: #3b1010;
+            color: #ffd8d8;
+            border-color: #8f1f1f;
+        }
+
+        .user-banner {
+            margin-bottom: 18px;
+            background: #121212;
+            border-left: 6px solid var(--green);
+            padding: 12px 14px;
+            border-radius: 14px;
+            color: var(--muted);
+        }
+
+        .list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .mini {
+            background: var(--panel-2);
+            border: 2px solid var(--border);
+            border-radius: 18px;
+            padding: 16px;
+        }
+
+        .mini strong {
+            color: var(--green-soft);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 760px;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid var(--border);
+            padding: 12px 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            color: var(--green-soft);
+            background: #121212;
+        }
+
+        footer {
+            margin-top: 26px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            text-align: center;
+        }
+
+        @media (max-width: 900px) {
+            .grid,
+            .split {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar-inner {
+                justify-content: center;
+            }
+
+            .brand {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .nav {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <div class="brand-badge">♥</div>
+                <div>
+                    <div style="font-size: 1.1rem;">Proyecto PAEC</div>
+                    <div style="font-size: 0.9rem; color: var(--muted);">Vida saludable</div>
+                </div>
+            </div>
+            <nav class="nav">
+                ${enlaces_nav}
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        ${mensaje_html}
+        ${banner_usuario}
+        ${contenido}
+        <footer>© 2024 Proyecto PAEC - Vida Saludable</footer>
+    </main>
+</body>
+</html>
